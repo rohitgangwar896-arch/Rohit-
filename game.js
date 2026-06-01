@@ -16,19 +16,34 @@ let snake = [
 ];
 let food = { x: 5, y: 5 };
 let gameRunning = true;
+// Set to track snake body positions for O(1) collision detection
+let snakeOccupancy = new Set();
+
+function updateOccupancy() {
+    snakeOccupancy.clear();
+    for (let i = 0; i < snake.length; i++) {
+        snakeOccupancy.add(`${snake[i].x},${snake[i].y}`);
+    }
+}
+let lastTime = 0;
+const frameInterval = 100; // 100ms = 10 FPS
 
 document.addEventListener("keydown", changeDirection);
 
-function main() {
+function main(timestamp) {
     if (!gameRunning) return;
 
-    setTimeout(function onTick() {
+    requestAnimationFrame(main);
+
+    const deltaTime = timestamp - lastTime;
+
+    if (deltaTime >= frameInterval) {
+        lastTime = timestamp - (deltaTime % frameInterval);
         clearCanvas();
         drawFood();
         advanceSnake();
         drawSnake();
-        main();
-    }, 100);
+    }
 }
 
 function clearCanvas() {
@@ -54,25 +69,31 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    // Add new head to occupancy
+    snakeOccupancy.add(`${head.x},${head.y}`);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        // Remove tail from occupancy
+        snakeOccupancy.delete(`${tail.x},${tail.y}`);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // O(1) lookup using Set
+    return snakeOccupancy.has(`${head.x},${head.y}`);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // O(1) lookup using Set
+    if (snakeOccupancy.has(`${food.x},${food.y}`)) {
         createFood();
     }
 }
@@ -126,12 +147,16 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    updateOccupancy();
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    lastTime = performance.now();
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
-    main();
+    requestAnimationFrame(main);
 }
 
+updateOccupancy();
 createFood();
-main();
+lastTime = performance.now();
+requestAnimationFrame(main);
