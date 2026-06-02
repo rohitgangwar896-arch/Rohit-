@@ -16,19 +16,30 @@ let snake = [
 ];
 let food = { x: 5, y: 5 };
 let gameRunning = true;
+// Performance Optimization: Use a Set for O(1) occupancy checks instead of O(n) array iterations
+let snakeOccupancy = new Set();
+let lastTime = 0;
+// Frame limiting: Target 10 FPS for consistent gameplay speed
+const interval = 100;
 
 document.addEventListener("keydown", changeDirection);
 
-function main() {
+/**
+ * Main game loop using requestAnimationFrame for better performance and sync.
+ * Throttled to 10 FPS to preserve original game speed.
+ */
+function main(currentTime) {
     if (!gameRunning) return;
+    requestAnimationFrame(main);
 
-    setTimeout(function onTick() {
-        clearCanvas();
-        drawFood();
-        advanceSnake();
-        drawSnake();
-        main();
-    }, 100);
+    const deltaTime = currentTime - lastTime;
+    if (deltaTime < interval) return;
+
+    lastTime = currentTime;
+    clearCanvas();
+    drawFood();
+    advanceSnake();
+    drawSnake();
 }
 
 function clearCanvas() {
@@ -43,6 +54,15 @@ function drawSnake() {
     });
 }
 
+/**
+ * Synchronizes the occupancy Set with the snake's current positions.
+ * Provides O(1) lookups for collisions and food placement.
+ */
+function updateOccupancy() {
+    snakeOccupancy.clear();
+    snake.forEach(part => snakeOccupancy.add(`${part.x},${part.y}`));
+}
+
 function advanceSnake() {
     if (dx === 0 && dy === 0) return;
 
@@ -54,25 +74,28 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    snakeOccupancy.add(`${head.x},${head.y}`);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // Optimization: Use textContent instead of innerHTML to avoid HTML parsing overhead
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeOccupancy.delete(`${tail.x},${tail.y}`);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    return snakeOccupancy.has(`${head.x},${head.y}`);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    if (snakeOccupancy.has(`${food.x},${food.y}`)) {
         createFood();
     }
 }
@@ -126,12 +149,15 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    updateOccupancy();
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
-    main();
+    lastTime = performance.now();
+    requestAnimationFrame(main);
 }
 
+updateOccupancy();
 createFood();
-main();
+requestAnimationFrame(main);
