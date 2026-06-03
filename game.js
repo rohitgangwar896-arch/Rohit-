@@ -17,18 +17,26 @@ let snake = [
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
+let lastRenderTime = 0;
+const gameSpeed = 10; // Adjust for speed (frames per second)
+
 document.addEventListener("keydown", changeDirection);
 
-function main() {
+// Optimized game loop using requestAnimationFrame for smoother performance and CPU efficiency
+function main(currentTime) {
     if (!gameRunning) return;
 
-    setTimeout(function onTick() {
-        clearCanvas();
-        drawFood();
-        advanceSnake();
-        drawSnake();
-        main();
-    }, 100);
+    window.requestAnimationFrame(main);
+
+    const secondsSinceLastRender = (currentTime - lastRenderTime) / 1000;
+    if (secondsSinceLastRender < 1 / gameSpeed) return;
+
+    lastRenderTime = currentTime;
+
+    clearCanvas();
+    drawFood();
+    advanceSnake();
+    drawSnake();
 }
 
 function clearCanvas() {
@@ -130,8 +138,9 @@ function resetGame() {
     scoreElement.innerHTML = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
-    main();
+    lastRenderTime = 0;
+    window.requestAnimationFrame(main);
 }
 
 createFood();
-main();
+window.requestAnimationFrame(main);
