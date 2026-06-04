@@ -19,16 +19,29 @@ let gameRunning = true;
 
 document.addEventListener("keydown", changeDirection);
 
-function main() {
+let lastTickTime = 0;
+const tickInterval = 100; // 10 FPS
+
+/**
+ * ⚡ Bolt: Refactored game loop to use requestAnimationFrame.
+ * This is more efficient as it syncs with the display's refresh rate,
+ * reduces CPU usage, and automatically pauses when the tab is inactive.
+ */
+function main(timestamp) {
     if (!gameRunning) return;
 
-    setTimeout(function onTick() {
+    requestAnimationFrame(main);
+
+    const deltaTime = timestamp - lastTickTime;
+
+    if (deltaTime >= tickInterval) {
+        lastTickTime = timestamp - (deltaTime % tickInterval);
+
         clearCanvas();
         drawFood();
         advanceSnake();
         drawSnake();
-        main();
-    }, 100);
+    }
 }
 
 function clearCanvas() {
@@ -57,7 +70,8 @@ function advanceSnake() {
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // ⚡ Bolt: Using textContent is faster and safer than innerHTML for text-only updates.
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
         snake.pop();
@@ -127,7 +141,8 @@ function resetGame() {
         { x: 10, y: 12 }
     ];
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    // ⚡ Bolt: Using textContent is faster and safer than innerHTML for text-only updates.
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
