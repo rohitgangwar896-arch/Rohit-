@@ -14,6 +14,8 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Optimization: Use a Set for O(1) spatial occupancy checks
+let snakeSet = new Set(snake.map(p => `${p.x},${p.y}`));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -47,32 +49,33 @@ function advanceSnake() {
     if (dx === 0 && dy === 0) return;
 
     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+    const headKey = `${head.x},${head.y}`;
 
-    if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || collision(head)) {
+    // Optimization: O(1) collision check using snakeSet
+    if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || snakeSet.has(headKey)) {
         gameOver();
         return;
     }
 
     snake.unshift(head);
+    snakeSet.add(headKey);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(`${tail.x},${tail.y}`);
     }
-}
-
-function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Optimization: O(1) occupancy check using snakeSet
+    if (snakeSet.has(`${food.x},${food.y}`)) {
         createFood();
     }
 }
@@ -126,8 +129,10 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Optimization: Re-initialize snakeSet on reset
+    snakeSet = new Set(snake.map(p => `${p.x},${p.y}`));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
