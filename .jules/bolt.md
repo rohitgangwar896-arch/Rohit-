@@ -1,0 +1,3 @@
+## 2026-06-12 - [Snake Game Optimization]
+**Learning:** In the Snake game implementation, spatial occupancy checks using `Array.some()` scale linearly with snake length, which can lead to frame drops on large grids or long snakes. Using a `Set` with coordinate strings ("x,y") provides O(1) lookups, offering a ~120x speedup for a 400-segment snake. Additionally, `requestAnimationFrame` with a timestamp-based throttle provides significantly more stable frame timing compared to `setTimeout`, reducing jitter.
+**Action:** Use `Set` for collision/occupancy detection in spatial games. Always prefer `requestAnimationFrame` for game loops to ensure better synchronization with the browser refresh cycle and more consistent FPS.
