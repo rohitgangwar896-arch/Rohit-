@@ -14,21 +14,28 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Optimization: Use a Set for O(1) occupancy checks
+let snakeSet = new Set(snake.map(part => `${part.x},${part.y}`));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
+let lastTime = 0;
+const frameRate = 100; // 10 FPS (100ms interval)
 
 document.addEventListener("keydown", changeDirection);
 
-function main() {
+function main(currentTime) {
     if (!gameRunning) return;
 
-    setTimeout(function onTick() {
-        clearCanvas();
-        drawFood();
-        advanceSnake();
-        drawSnake();
-        main();
-    }, 100);
+    requestAnimationFrame(main);
+
+    const deltaTime = currentTime - lastTime;
+    if (deltaTime < frameRate) return;
+
+    lastTime = currentTime;
+    clearCanvas();
+    drawFood();
+    advanceSnake();
+    drawSnake();
 }
 
 function clearCanvas() {
@@ -54,25 +61,27 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    snakeSet.add(`${head.x},${head.y}`);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(`${tail.x},${tail.y}`);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    return snakeSet.has(`${head.x},${head.y}`);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    if (snakeSet.has(`${food.x},${food.y}`)) {
         createFood();
     }
 }
@@ -126,12 +135,14 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    snakeSet = new Set(snake.map(part => `${part.x},${part.y}`));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
-    main();
+    lastTime = 0;
+    requestAnimationFrame(main);
 }
 
 createFood();
-main();
+requestAnimationFrame(main);
