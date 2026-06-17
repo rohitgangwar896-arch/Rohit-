@@ -14,6 +14,8 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt: Use a Set for O(1) lookup of snake body parts (spatial occupancy check)
+let snakeSet = new Set(snake.map(p => `${p.x},${p.y}`));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -48,31 +50,50 @@ function advanceSnake() {
 
     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-    if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || collision(head)) {
-        gameOver();
-        return;
-    }
-
-    snake.unshift(head);
+    // Bolt: Handle movement first to correctly check for collisions.
+    // In many snake implementations, the head can move into the tail's current position.
 
     if (head.x === food.x && head.y === food.y) {
+        // Growth: Check collision first, then add.
+        if (collision(head)) {
+            gameOver();
+            return;
+        }
+        snake.unshift(head);
+        snakeSet.add(`${head.x},${head.y}`);
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        // Normal movement: Remove tail, THEN check collision and add head.
+        // This allows the head to move into the space the tail just vacated.
+        const tail = snake.pop();
+        snakeSet.delete(`${tail.x},${tail.y}`);
+
+        if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || collision(head)) {
+            // Re-add tail if game over to keep snake intact for display
+            snake.push(tail);
+            snakeSet.add(`${tail.x},${tail.y}`);
+            gameOver();
+            return;
+        }
+
+        snake.unshift(head);
+        snakeSet.add(`${head.x},${head.y}`);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt: O(1) lookup using Set instead of O(n) array scan
+    return snakeSet.has(`${head.x},${head.y}`);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt: O(1) lookup using Set
+    if (snakeSet.has(`${food.x},${food.y}`)) {
         createFood();
     }
 }
@@ -126,8 +147,10 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Bolt: Reset the tracking Set
+    snakeSet = new Set(snake.map(p => `${p.x},${p.y}`));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
