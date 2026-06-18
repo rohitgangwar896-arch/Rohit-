@@ -14,6 +14,8 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt Optimization: Use a Set for O(1) spatial lookups instead of O(n) array searches
+let snakeSet = new Set(snake.map(part => `${part.x},${part.y}`));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -54,25 +56,32 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    // Bolt Optimization: Sync Set with snake array
+    snakeSet.add(`${head.x},${head.y}`);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // Bolt Optimization: textContent is faster and safer than innerHTML
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        // Bolt Optimization: Remove tail from Set
+        snakeSet.delete(`${tail.x},${tail.y}`);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt Optimization: O(1) lookup instead of O(n) array.some
+    return snakeSet.has(`${head.x},${head.y}`);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt Optimization: O(1) lookup
+    if (snakeSet.has(`${food.x},${food.y}`)) {
         createFood();
     }
 }
@@ -126,8 +135,11 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Bolt Optimization: Re-initialize Set
+    snakeSet = new Set(snake.map(part => `${part.x},${part.y}`));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    // Bolt Optimization: textContent
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
