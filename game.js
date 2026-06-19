@@ -14,6 +14,8 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt: Optimized collision detection using a Set for O(1) lookups
+let snakeSet = new Set(snake.map(p => p.x * tileCount + p.y));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -48,31 +50,37 @@ function advanceSnake() {
 
     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
+    // Bolt: O(1) collision check using Set
     if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || collision(head)) {
         gameOver();
         return;
     }
 
     snake.unshift(head);
+    snakeSet.add(head.x * tileCount + head.y);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // Bolt: textContent is faster than innerHTML as it doesn't trigger DOM parsing
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(tail.x * tileCount + tail.y);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt: O(1) lookup instead of O(n) scan
+    return snakeSet.has(head.x * tileCount + head.y);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt: O(1) lookup to ensure food doesn't spawn on snake
+    if (snakeSet.has(food.x * tileCount + food.y)) {
         createFood();
     }
 }
@@ -126,8 +134,10 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Bolt: Re-initialize Set on reset
+    snakeSet = new Set(snake.map(p => p.x * tileCount + p.y));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
