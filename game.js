@@ -16,6 +16,11 @@ let snake = [
 ];
 let food = { x: 5, y: 5 };
 let gameRunning = true;
+// O(1) spatial occupancy check
+let snakeSet = new Set();
+
+// Helper for O(1) coordinate hashing
+const getHash = (x, y) => x * tileCount + y;
 
 document.addEventListener("keydown", changeDirection);
 
@@ -54,25 +59,29 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    snakeSet.add(getHash(head.x, head.y));
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(getHash(tail.x, tail.y));
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Optimized O(1) lookup using Set
+    return snakeSet.has(getHash(head.x, head.y));
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Optimized O(1) lookup using Set
+    if (snakeSet.has(getHash(food.x, food.y))) {
         createFood();
     }
 }
@@ -126,12 +135,15 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    snakeSet = new Set(snake.map(p => getHash(p.x, p.y)));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
 }
 
+// Initial state sync
+snakeSet = new Set(snake.map(p => getHash(p.x, p.y)));
 createFood();
 main();
