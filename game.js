@@ -14,6 +14,9 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt: O(1) lookup for snake occupancy
+let snakeSet = new Set(snake.map(p => p.x * tileCount + p.y));
+
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -54,25 +57,29 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    snakeSet.add(head.x * tileCount + head.y); // Bolt: Maintain Set synchronization
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        scoreElement.textContent = `Score: ${score}`; // Bolt: Use textContent instead of innerHTML
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(tail.x * tileCount + tail.y); // Bolt: Maintain Set synchronization
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt: O(1) lookup
+    return snakeSet.has(head.x * tileCount + head.y);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt: O(1) lookup
+    if (snakeSet.has(food.x * tileCount + food.y)) {
         createFood();
     }
 }
@@ -126,8 +133,10 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Bolt: Re-initialize Set
+    snakeSet = new Set(snake.map(p => p.x * tileCount + p.y));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`; // Bolt: Use textContent instead of innerHTML
     gameOverElement.style.display = "none";
     createFood();
     main();
