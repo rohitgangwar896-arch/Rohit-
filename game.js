@@ -14,6 +14,9 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Optimization: Use a Set for O(1) collision detection and occupancy checks.
+// Numeric hash: x * tileCount + y
+let snakeSet = new Set(snake.map(part => part.x * tileCount + part.y));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -54,25 +57,30 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    snakeSet.add(head.x * tileCount + head.y);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // Optimization: Use textContent instead of innerHTML for better performance and security.
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(tail.x * tileCount + tail.y);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Optimization: O(1) lookup instead of O(n) Array.some()
+    return snakeSet.has(head.x * tileCount + head.y);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Optimization: O(1) lookup instead of O(n) Array.some()
+    if (snakeSet.has(food.x * tileCount + food.y)) {
         createFood();
     }
 }
@@ -126,8 +134,9 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    snakeSet = new Set(snake.map(part => part.x * tileCount + part.y));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
