@@ -14,6 +14,8 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt: O(1) lookup for snake body coordinates using numeric hashes (x * tileCount + y)
+let snakeSet = new Set(snake.map(part => part.x * tileCount + part.y));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -53,26 +55,32 @@ function advanceSnake() {
         return;
     }
 
-    snake.unshift(head);
-
     if (head.x === food.x && head.y === food.y) {
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // Bolt: textContent is faster than innerHTML as it avoids HTML parsing
+        scoreElement.textContent = `Score: ${score}`;
+        snake.unshift(head);
+        snakeSet.add(head.x * tileCount + head.y);
         createFood();
     } else {
-        snake.pop();
+        const removed = snake.pop();
+        snakeSet.delete(removed.x * tileCount + removed.y);
+        snake.unshift(head);
+        snakeSet.add(head.x * tileCount + head.y);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt: Optimized lookup from O(n) to O(1)
+    return snakeSet.has(head.x * tileCount + head.y);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt: Optimized lookup from O(n) to O(1)
+    if (snakeSet.has(food.x * tileCount + food.y)) {
         createFood();
     }
 }
@@ -126,8 +134,10 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    snakeSet = new Set(snake.map(part => part.x * tileCount + part.y));
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    // Bolt: textContent is faster than innerHTML as it avoids HTML parsing
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();
