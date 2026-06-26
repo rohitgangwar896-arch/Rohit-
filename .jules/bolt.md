@@ -1,0 +1,3 @@
+## 2025-05-14 - Robust State Synchronization for Position Tracking
+**Learning:** When using a `Set` to track unique positions (like a snake's body) that are mirrored in an array, the order of operations during movement is critical. If the head moves into the tail's previous position and you add the head to the `Set` *before* removing the tail, a subsequent `Set.delete(tail)` will remove the head's coordinate, leading to an inconsistent state.
+**Action:** Always perform the removal (e.g., `Set.delete(tail)`) before the addition (e.g., `Set.add(head)`) when moving entities whose head can follow their tail in a single tick.
