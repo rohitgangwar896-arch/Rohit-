@@ -1,0 +1,3 @@
+## 2026-06-29 - [Optimized Coordinate Lookups in Snake Game]
+**Learning:** Using `Array.prototype.some()` for coordinate occupancy checks results in O(n) complexity. Replacing this with a `Set` of numeric hashes (`x * tileCount + y`) improves lookup to O(1). Baseline profiling showed a ~19x performance gain for 1M iterations (176.6ms vs 9.1ms). Additionally, `textContent` is faster than `innerHTML` for simple text updates.
+**Action:** Always prefer `Set` or `Map` for frequent spatial lookups or membership checks in collections that grow over time. Avoid `innerHTML` when updating text-only content.
