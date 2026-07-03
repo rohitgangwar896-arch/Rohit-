@@ -5,6 +5,7 @@ const gameOverElement = document.getElementById("game-over");
 
 const gridSize = 20;
 const tileCount = canvas.width / gridSize;
+const getHash = (x, y) => x * tileCount + y;
 
 let score = 0;
 let dx = 0;
@@ -14,6 +15,10 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt: Use a Set for O(1) collision detection and food placement checks.
+// Numeric hash (x * tileCount + y) avoids string serialization overhead.
+let snakeSet = new Set(snake.map(p => getHash(p.x, p.y)));
+
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -56,23 +61,32 @@ function advanceSnake() {
     snake.unshift(head);
 
     if (head.x === food.x && head.y === food.y) {
+        // Bolt: Add new head hash to snakeSet
+        snakeSet.add(getHash(head.x, head.y));
         score += 10;
-        scoreElement.innerHTML = `Score: ${score}`;
+        // Bolt: Using textContent is more efficient than innerHTML for text-only updates.
+        scoreElement.textContent = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        // Bolt: Robust State Synchronization Pattern.
+        // Remove tail hash BEFORE adding head hash to prevent clobbering.
+        const tail = snake.pop();
+        snakeSet.delete(getHash(tail.x, tail.y));
+        snakeSet.add(getHash(head.x, head.y));
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt: Optimized from O(n) array search to O(1) Set lookup.
+    return snakeSet.has(getHash(head.x, head.y));
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt: Optimized from O(n) array search to O(1) Set lookup.
+    if (snakeSet.has(getHash(food.x, food.y))) {
         createFood();
     }
 }
@@ -126,8 +140,12 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Bolt: Correctly re-initialize snakeSet on reset.
+    snakeSet = new Set(snake.map(p => getHash(p.x, p.y)));
+
     gameRunning = true;
-    scoreElement.innerHTML = `Score: ${score}`;
+    // Bolt: Using textContent is more efficient than innerHTML for text-only updates.
+    scoreElement.textContent = `Score: ${score}`;
     gameOverElement.style.display = "none";
     createFood();
     main();

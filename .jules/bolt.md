@@ -1,0 +1,3 @@
+## 2025-05-14 - [Snake Collision Optimization]
+**Learning:** Using a `Set` with numeric hashes `(x * tileCount + y)` instead of $O(n)$ array traversal for collision detection provides a massive performance boost (from ~1.7s to ~7ms for 1M lookups in a 400-segment snake). The Robust State Synchronization Pattern (deleting the tail from the Set *before* adding the head) is critical to prevent coordinate clobbering when the head moves into the tail's previous position.
+**Action:** Use `Set` with numeric hashes for spatial occupancy checks in grid-based games and always ensure the removal of old state precedes the addition of new state if they might share coordinates.
