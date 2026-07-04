@@ -1,0 +1,3 @@
+## 2026-07-04 - Optimization of Spatial Lookups with Numeric Hashes
+**Learning:** In the Snake game, collision detection and food placement checks were originally O(n) using `Array.some()`. Replacing this with a `Set` provides O(1) lookups. Furthermore, using a numeric hash (`x * tileCount + y`) for coordinate representation in the Set is significantly faster (approx. 2x) than using string templates (e.g., `"${x},${y}"`) due to avoiding string serialization and allocation overhead in the hot game loop.
+**Action:** Prefer numeric hashes or bit-packing for 2D/3D coordinate tracking in Sets or Maps when performance is critical.
