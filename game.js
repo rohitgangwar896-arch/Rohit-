@@ -14,6 +14,9 @@ let snake = [
     { x: 10, y: 11 },
     { x: 10, y: 12 }
 ];
+// Bolt: Added snakeSet for O(1) collision detection.
+// Using numeric hash (x * tileCount + y) for maximum performance.
+let snakeSet = new Set(snake.map(part => part.x * tileCount + part.y));
 let food = { x: 5, y: 5 };
 let gameRunning = true;
 
@@ -54,25 +57,29 @@ function advanceSnake() {
     }
 
     snake.unshift(head);
+    snakeSet.add(head.x * tileCount + head.y);
 
     if (head.x === food.x && head.y === food.y) {
         score += 10;
         scoreElement.innerHTML = `Score: ${score}`;
         createFood();
     } else {
-        snake.pop();
+        const tail = snake.pop();
+        snakeSet.delete(tail.x * tileCount + tail.y);
     }
 }
 
 function collision(head) {
-    return snake.some(part => part.x === head.x && part.y === head.y);
+    // Bolt: Optimized O(1) lookup using snakeSet
+    return snakeSet.has(head.x * tileCount + head.y);
 }
 
 function createFood() {
     food.x = Math.floor(Math.random() * tileCount);
     food.y = Math.floor(Math.random() * tileCount);
 
-    if (snake.some(part => part.x === food.x && part.y === food.y)) {
+    // Bolt: Optimized O(1) lookup using snakeSet
+    if (snakeSet.has(food.x * tileCount + food.y)) {
         createFood();
     }
 }
@@ -126,6 +133,8 @@ function resetGame() {
         { x: 10, y: 11 },
         { x: 10, y: 12 }
     ];
+    // Bolt: Sync snakeSet on reset
+    snakeSet = new Set(snake.map(part => part.x * tileCount + part.y));
     gameRunning = true;
     scoreElement.innerHTML = `Score: ${score}`;
     gameOverElement.style.display = "none";
